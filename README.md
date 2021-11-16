@@ -1,3 +1,3 @@
-# wefl
+# Welf
 
 WAD Editor for Linux
