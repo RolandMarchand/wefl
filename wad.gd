@@ -12,6 +12,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Wefl.  If not, see <https://www.gnu.org/licenses/>.
+#
+#
+# Description:
+# Singleton to store WAD data.
 extends Node
 
 var FILE: PoolByteArray = []

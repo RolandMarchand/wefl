@@ -17,6 +17,7 @@
 # Description:
 # This file reads WAD files, and stores the header, dictionary and data
 # into dictionaries.
+# Might remove the GUI control later.
 extends MarginContainer
 
 onready var bar: ProgressBar = $VBoxContainer/ProgressBar
