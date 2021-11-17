@@ -18,6 +18,8 @@
 # Singleton to store WAD data.
 extends Node
 
+enum THINGS {X_POS = 0, Y_POS = 2, ANGLE = 4, TYPE = 6, FLAGS = 8}
+
 signal data_ready
 
 # Populated by reader.gd
