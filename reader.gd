@@ -17,11 +17,7 @@
 # Description:
 # This file reads WAD files, and stores the header, dictionary and data
 # into dictionaries.
-# Might remove the GUI control later.
 extends MarginContainer
-
-onready var bar: ProgressBar = $VBoxContainer/ProgressBar
-onready var label: Label = $VBoxContainer/Label
 
 # Loads wad with multiple threads
 var thread := Thread.new()
@@ -34,15 +30,11 @@ func _ready() -> void:
 	thread.start(self, "_record_wad")
 
 func _load_config():
-# warning-ignore:return_value_discarded
-	_set_loading_screen("Load config...", 1)
-
+	# warning-ignore:return_value_discarded
 	wad_config.load("res://doom2.cfg")
 	WAD.FILE = wad_config.get_value("doom2.wad", "wad_file")
 	WAD.HEADER = wad_config.get_value("doom2.wad", "header")
 	WAD.LUMPS = wad_config.get_value("doom2.wad", "lumps")
-
-	_set_loading_screen("Config loaded!", 1, 1)
 
 func _record_wad():
 	if File.new().file_exists("res://doom2.cfg"):
@@ -52,20 +44,10 @@ func _record_wad():
 	var wad_file = File.new()
 	wad_file.open("res://doom2.wad", File.READ)
 
-	# Sets the loading screen
-	mutex.lock()
-	_set_loading_screen("Loading wad...", wad_file.get_len())
-	mutex.unlock()
-
 	# Loads every byte into WAD.FILE PoolByteArray
 	var tmp_byte_buffer: PoolByteArray = []
 	while not wad_file.eof_reached():
 		tmp_byte_buffer.append_array(wad_file.get_buffer(128))
-
-		mutex.lock()
-		bar.value += 128
-		mutex.unlock()
-
 	WAD.FILE = tmp_byte_buffer
 	# warning-ignore:return_value_discarded
 	tmp_byte_buffer.empty()
@@ -76,10 +58,6 @@ func _record_wad():
 	var ptr_dict: int = _record_header()
 	_record_lumps(ptr_dict)
 	_save_records()
-
-	mutex.lock()
-	_set_loading_screen("Wad loaded!", 1, 1)
-	mutex.unlock()
 
 
 # wadinfo_t
@@ -94,10 +72,6 @@ func _record_header() -> int:
 	WAD.HEADER["identification"] = WAD.FILE.subarray(0, 3).get_string_from_ascii()
 	WAD.HEADER["numlumps"] = byte2int(WAD.FILE.subarray(4, 7))
 	WAD.HEADER["infotableofs"] = byte2int(WAD.FILE.subarray(8, 11))
-
-	mutex.lock()
-	_set_loading_screen("Loading lumps...", WAD.HEADER["numlumps"])
-	mutex.unlock()
 
 	return WAD.HEADER["infotableofs"]
 
@@ -115,17 +89,8 @@ func _record_lumps(ptr: int):
 
 	WAD.LUMPS[lump_name] = [from, to]
 
-	mutex.lock()
-	bar.value += 1
-	mutex.unlock()
-
 	if ptr + 32 < WAD.FILE.size(): # If not out of bound
 		_record_lumps(ptr + 16)
-
-func _set_loading_screen(text: String, max_val: int, init_val: int = 0) -> void:
-	label.text = text
-	bar.max_value = max_val
-	bar.value = init_val
 
 func _save_records():
 	if not File.new().file_exists("res://doom2.cfg"):
