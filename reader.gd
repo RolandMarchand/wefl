@@ -17,32 +17,39 @@
 # Description:
 # This file reads WAD files, and stores the header, dictionary and data
 # into dictionaries.
-extends MarginContainer
+extends Node
+
+signal wad_recorded
 
 # Loads wad with multiple threads
 var thread := Thread.new()
 var mutex := Mutex.new()
 
+var wad_filename: String = "doom2.wad"
+
 var wad_config: ConfigFile = ConfigFile.new()
 
 func _ready() -> void:
-# warning-ignore:return_value_discarded
+	# warning-ignore:return_value_discarded
 	thread.start(self, "_record_wad")
+	connect("wad_recorded", WAD, "add_maps", [], CONNECT_DEFERRED)
 
 func _load_config():
 	# warning-ignore:return_value_discarded
-	wad_config.load("res://doom2.cfg")
-	WAD.FILE = wad_config.get_value("doom2.wad", "wad_file")
-	WAD.HEADER = wad_config.get_value("doom2.wad", "header")
-	WAD.LUMPS = wad_config.get_value("doom2.wad", "lumps")
+	wad_config.load("res://wads.cfg")
+	WAD.FILE = wad_config.get_value(wad_filename, "wad_file")
+	WAD.HEADER = wad_config.get_value(wad_filename, "header")
+	WAD.LUMPS = wad_config.get_value(wad_filename, "lumps")
+
+	emit_signal("wad_recorded")
 
 func _record_wad():
-	if File.new().file_exists("res://doom2.cfg"):
+	if File.new().file_exists("res://wads.cfg"):
 		_load_config()
 		return
 
 	var wad_file = File.new()
-	wad_file.open("res://doom2.wad", File.READ)
+	wad_file.open("res://" + wad_filename, File.READ)
 
 	# Loads every byte into WAD.FILE PoolByteArray
 	var tmp_byte_buffer: PoolByteArray = []
@@ -86,19 +93,20 @@ func _record_lumps(ptr: int):
 	var lump_name := WAD.FILE.subarray(ptr + 8, ptr + 15).get_string_from_ascii()
 	var from := byte2int(WAD.FILE.subarray(ptr, ptr + 3))
 	var to := from + byte2int(WAD.FILE.subarray(ptr + 4, ptr + 7))
+	var lump: Array = [lump_name, [from, to]]
 
-	WAD.LUMPS[lump_name] = [from, to]
+	WAD.LUMPS.append_array(lump)
 
 	if ptr + 32 < WAD.FILE.size(): # If not out of bound
 		_record_lumps(ptr + 16)
 
 func _save_records():
-	if not File.new().file_exists("res://doom2.cfg"):
-		wad_config.set_value("doom2.wad", "wad_file", WAD.FILE)
-		wad_config.set_value("doom2.wad", "header", WAD.HEADER)
-		wad_config.set_value("doom2.wad", "lumps", WAD.LUMPS)
+	if not File.new().file_exists("res://wads.cfg"):
+		wad_config.set_value(wad_filename, "wad_file", WAD.FILE)
+		wad_config.set_value(wad_filename, "header", WAD.HEADER)
+		wad_config.set_value(wad_filename, "lumps", WAD.LUMPS)
 		# warning-ignore:return_value_discarded
-		wad_config.save("res://doom2.cfg")
+		wad_config.save("res://wads.cfg")
 
 func _exit_tree():
 	thread.wait_to_finish()
